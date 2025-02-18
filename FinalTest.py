@@ -6,6 +6,8 @@ from langchain.llms.base import LLM
 import requests
 import re 
 from typing import Any, List, Mapping, Optional
+from dotenv import load_dotenv
+import os
 
 class CustomLLM(LLM):
     api_url: str = "http://localhost:8000/ask_gemini"
@@ -24,15 +26,17 @@ class CustomLLM(LLM):
 st.set_page_config(page_title="Dr.Chat by NerAz", page_icon=":hospital:")
 st.title("Dr.Chat by NerAz")
 
+# Load environment variables
+load_dotenv()
 # Initialize custom LLM
 llm = CustomLLM()
 
 # Database connection
-host = 'localhost'
-port = '5432'
-username = 'postgres'
-password = '0000'
-database_schema = 'medical'
+host = os.getenv("DATABASE_HOST")
+port = os.getenv("DATABASE_PORT")
+username = os.getenv("DATABASE_USER")
+password = os.getenv("DATABASE_PASSWORD")
+database_schema = os.getenv("DATABASE_SCHEMA")
 postgres_uri = f"postgresql://{username}:{password}@{host}:{port}/{database_schema}"
 
 #include the tables you need

@@ -3,18 +3,25 @@ from pydantic import BaseModel
 from llama_cpp import Llama
 import uvicorn
 import google.generativeai as genai
+from dotenv import load_dotenv
+import os
+
+# Load environment variables
+load_dotenv()
 
 app = FastAPI()
 
 # Instantiate the Llama model
+# Load Llama model path from .env
+LLAMA_MODEL_PATH = os.getenv("LLAMA_MODEL_PATH")
 try:
-    my_awesome_llama_model = Llama(model_path=r"C:\Users\Admin\Desktop\chatbot\phi-1_5-Q8_0.gguf")
+    my_awesome_llama_model = Llama(model_path=LLAMA_MODEL_PATH)
 except Exception as e:
     print(f"Error loading model: {e}")
     exit(1)
 
 # Configure Gemini API
-GEMINI_API_KEY = "AIzaSyCfVzyJ0MX_cantdCMDVk9NhVvY7IdSKvM"
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=GEMINI_API_KEY)
 gemini_model = genai.GenerativeModel('gemini-pro')
 
