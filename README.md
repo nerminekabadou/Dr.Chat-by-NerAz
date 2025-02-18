@@ -28,7 +28,7 @@ Before running the project, ensure you have the following installed:
 ### Step 1: Clone the Repository
 First, clone the repository to your local machine:
 ```bash
-git clone [<repository-url>](https://github.com/nerminekabadou/Dr.Chat-by-NerAz)
+git clone [https://github.com/nerminekabadou/Dr.Chat-by-NerAz](https://github.com/nerminekabadou/Dr.Chat-by-NerAz)
 cd Dr.Chat-by-NerAz
 ```
 
