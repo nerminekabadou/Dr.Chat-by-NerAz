@@ -1,78 +1,75 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from llama_cpp import Llama
-import uvicorn
-import google.generativeai as genai
-from dotenv import load_dotenv
-import os
+"""FastAPI backend exposing the language models used by Dr.Chat.
 
-# Load environment variables
+* ``POST /ask_gemini`` - Google Gemini (used by the Streamlit app).
+* ``POST /ask``        - optional local Llama model (llama-cpp-python), loaded
+  on first use so the API starts even when no local model is installed.
+"""
+
+import os
+from functools import lru_cache
+
+import google.generativeai as genai
+import uvicorn
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
+
 load_dotenv()
 
-app = FastAPI()
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
-# Instantiate the Llama model
-# Load Llama model path from .env
-LLAMA_MODEL_PATH = os.getenv("LLAMA_MODEL_PATH")
-try:
-    my_awesome_llama_model = Llama(model_path=LLAMA_MODEL_PATH)
-except Exception as e:
-    print(f"Error loading model: {e}")
-    exit(1)
+app = FastAPI(title="Dr.Chat API")
 
-# Configure Gemini API
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-genai.configure(api_key=GEMINI_API_KEY)
-gemini_model = genai.GenerativeModel('gemini-pro')
 
 class Query(BaseModel):
-    question: str
+    question: str = Field(min_length=1)
 
-def generate_text_from_prompt(user_prompt, max_tokens=50, temperature=0.3, top_p=0.9, echo=False):
+
+@lru_cache(maxsize=1)
+def get_gemini():
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=503, detail="GEMINI_API_KEY is not configured")
+    genai.configure(api_key=api_key)
+    return genai.GenerativeModel(GEMINI_MODEL)
+
+
+@lru_cache(maxsize=1)
+def get_llama():
+    model_path = os.getenv("LLAMA_MODEL_PATH")
+    if not model_path:
+        raise HTTPException(status_code=503, detail="LLAMA_MODEL_PATH is not configured")
     try:
-        model_output = my_awesome_llama_model(
-            user_prompt,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            top_p=top_p,
-            echo=echo,
-        )
-        return model_output
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating response: {str(e)}")
+        from llama_cpp import Llama  # optional dependency, see requirements-llama.txt
+    except ImportError as error:
+        raise HTTPException(status_code=503, detail="llama-cpp-python is not installed") from error
+    return Llama(model_path=model_path, verbose=False)
 
-def extract_first_sentence(text):
-    sentences = text.split('.')
-    return sentences[0].strip() + '.' if sentences else text
 
 @app.get("/")
 async def read_root():
-    return {"message": "Welcome to the Llama and Gemini API. Use the /ask endpoint for Llama and /ask_gemini for Gemini."}
+    return {"message": "Dr.Chat API. Use POST /ask_gemini (Gemini) or POST /ask (local Llama)."}
+
 
 @app.post("/ask")
-async def ask_question(query: Query):
-    if not query.question:
-        raise HTTPException(status_code=400, detail="Question cannot be empty")
-    
+def ask_llama(query: Query):
+    llama = get_llama()
     prompt = f"Provide a single-paragraph response and give a good description: {query.question}"
     try:
-        llama_model_response = generate_text_from_prompt(prompt)
-        raw_result = llama_model_response["choices"][0]["text"].strip()
-        final_result = extract_first_sentence(raw_result)
-        return {"response": raw_result} 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing question: {str(e)}")
+        output = llama(prompt, max_tokens=256, temperature=0.3, top_p=0.9)
+        return {"response": output["choices"][0]["text"].strip()}
+    except Exception as error:
+        raise HTTPException(status_code=500, detail=f"Llama error: {error}") from error
+
 
 @app.post("/ask_gemini")
-async def ask_gemini(query: Query):
-    if not query.question:
-        raise HTTPException(status_code=400, detail="Question cannot be empty")
-    
+def ask_gemini(query: Query):
+    model = get_gemini()
     try:
-        response = gemini_model.generate_content(query.question)
-        return {"response": response.text}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing question with Gemini: {str(e)}")
+        return {"response": model.generate_content(query.question).text}
+    except Exception as error:
+        raise HTTPException(status_code=502, detail=f"Gemini error: {error}") from error
+
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000)

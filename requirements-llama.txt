@@ -1,0 +1,2 @@
+# Optional: local Llama model behind POST /ask (needs a C/C++ toolchain to build)
+llama-cpp-python>=0.2.90

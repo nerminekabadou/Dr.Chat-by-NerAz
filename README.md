@@ -1,104 +1,83 @@
-# AI-Powered Chatbot for Hospital Management Platform
+# Dr.Chat: AI assistant for a hospital management platform
 
-## Project Overview
-The healthcare sector faces multiple challenges, including efficient resource management and improving service quality. To address these issues, an AI-powered chatbot has been developed and integrated into a hospital management platform. This chatbot enhances communication and facilitates access to information within hospitals through artificial intelligence.
+[![tests](https://github.com/nerminekabadou/Dr.Chat-by-NerAz/actions/workflows/tests.yml/badge.svg)](https://github.com/nerminekabadou/Dr.Chat-by-NerAz/actions/workflows/tests.yml)
 
-The project focuses on designing an advanced chatbot specifically for the hospital management platform. Leveraging state-of-the-art AI technologies, the chatbot is capable of handling two types of queries:
+Dr.Chat is a chatbot for a hospital management platform. It answers two kinds of questions:
 
-### Features
-* **General Questions**  
-  Provides detailed and informative answers on various topics related to healthcare and beyond, with fine-tuning of the model to enhance its accuracy for these types of queries.
-* **Specific Questions**  
-  Accesses the platform's database to deliver personalized responses, such as doctor availability, hospital capacities, or medication information, ensuring real-time updates based on user prompts.
+- **General questions** about health or the hospital, answered directly by an LLM.
+- **Questions about the platform's data**, such as doctors, hospitals, illnesses and medications. The LLM turns the question into SQL, the query runs against the hospital's PostgreSQL database, and the result is rewritten as a natural-language answer.
 
----
+## How it works
 
-## Installation Instructions
+```
+ Streamlit UI (app.py)
+   │ 1. route: DATABASE or GENERAL?          ┌──────────────────────────┐
+   │ 2. text-to-SQL (if DATABASE)  ─────────▶│ FastAPI backend (main.py)│──▶ Gemini / local Llama
+   │ 3. answer from SQL result     ◀─────────└──────────────────────────┘
+   │
+   └─ validated SELECT ──▶ PostgreSQL (read-only connection)
+```
 
-### Prerequisites
-Before running the project, ensure you have the following installed:
-- **Python 3.7+**  
-  You can download Python from [here](https://www.python.org/downloads/).
-- **pip**  
-  Make sure pip (Python's package installer) is installed by running:
-  ```bash
-  python -m ensurepip --upgrade
-  ```
+The prompts are LangChain chains (`prompt | llm | parser`) that call the FastAPI backend through a custom LangChain `LLM` wrapper. The backend serves Google Gemini (`/ask_gemini`) and, optionally, a local Llama model through `llama-cpp-python` (`/ask`).
 
-### Step 1: Clone the Repository
-First, clone the repository to your local machine:
+### Safety of LLM-generated SQL
+The LLM writes the SQL, so the app treats it as untrusted input:
+
+1. [`sql_guard.py`](sql_guard.py) only accepts a single `SELECT` (or `WITH … SELECT`) statement. It rejects multiple statements and any write or DDL keyword.
+2. The database connection itself is opened with `default_transaction_read_only=on`, so a query that slipped past the guard still couldn't change any data.
+3. Only the tables the chatbot needs are exposed to the model: `doctors`, `hospitals`, `illnesses`, `medications`.
+
+For production you should also connect with a database user that only has `SELECT` rights.
+
+## Tech stack
+Python · Streamlit · FastAPI · LangChain · Google Gemini · llama-cpp-python · PostgreSQL / SQLAlchemy · pytest · GitHub Actions
+
+## Getting started
+
+Requirements: Python 3.10+ and a PostgreSQL database containing the tables above.
+
 ```bash
 git clone https://github.com/nerminekabadou/Dr.Chat-by-NerAz
 cd Dr.Chat-by-NerAz
-```
-
-### Step 2: Create and Activate a Virtual Environment (Recommended)
-It is recommended to create a virtual environment to keep dependencies isolated:
-```bash
-python -m venv venv
-
-# On Windows
-venv\Scripts\activate
-
-# On macOS/Linux
-source venv/bin/activate
-```
-
-### Step 3: Install the Dependencies
-Run the following command to install all the required dependencies:
-```bash
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+# optional, for the local Llama endpoint:
+pip install -r requirements-llama.txt
+
+cp .env.example .env               # then fill in your values
 ```
 
-### Step 4: Set Up Environment Variables
-The project relies on environment variables for certain configurations. Create a `.env` file in the root directory of the project and add the following variables:
-```ini
-DATABASE_HOST=your_database_host
-DATABASE_PORT=your_database_port
-DATABASE_USER=your_database_user
-DATABASE_PASSWORD=your_database_password
-DATABASE_SCHEMA=your_database_schema
-LLAMA_MODEL_PATH=path_to_your_llama_model
-GEMINI_API_KEY=your_gemini_api_key
-```
+Run the backend and the UI in two terminals:
 
-### Step 5: Run the FastAPI Server
-To run the FastAPI backend, use the following command:
 ```bash
-uvicorn main:app --reload 
+uvicorn main:app --reload          # API on http://localhost:8000 (docs at /docs)
+streamlit run app.py               # chat UI on http://localhost:8501
 ```
 
-This will start the server on `http://localhost:8000`. You can access the API through this endpoint.
+## API
 
-### Step 6: Run the Streamlit App
-To run the frontend Streamlit application, use the following command:
+| Method | Path          | Description                                  |
+|--------|---------------|----------------------------------------------|
+| GET    | `/`           | Health / welcome message                     |
+| POST   | `/ask_gemini` | `{"question": "..."}` → answer from Gemini   |
+| POST   | `/ask`        | `{"question": "..."}` → answer from local Llama (needs `LLAMA_MODEL_PATH`) |
+
+## Tests
+
 ```bash
-streamlit run main.py
+pip install -r requirements-dev.txt
+pytest
 ```
 
-This will start the Streamlit app, and you can access the chatbot interface at `http://localhost:8501` in your browser.
+## Project structure
 
-## Usage
+```
+app.py          Streamlit chat UI, routing and text-to-SQL chains
+main.py         FastAPI backend (Gemini + optional Llama)
+sql_guard.py    Validation of generated SQL
+tests/          Unit tests
+```
 
-### 1. Interacting with the Chatbot
-Once the application is running, the chatbot interface will appear in your browser. You can start interacting with the chatbot by typing your queries. The chatbot will respond with information either from the database (for specific queries) or from the general model (for general questions).
-
-### 2. Available Endpoints
-The FastAPI server provides the following endpoints:
-* **GET /** Returns a welcome message.
-* **POST /ask** Accepts a query and processes it using the Llama model. Example:
-  ```json
-  {
-    "question": "What are the available medications?"
-  }
-  ```
-* **POST /ask_gemini** Accepts a query and processes it using the Gemini model. Example:
-  ```json
-  {
-    "question": "What is the doctor's availability?"
-  }
-  ```
-
-## Additional Notes
-* Ensure that you have access to the necessary databases and models to run the application successfully.
-* The chatbot's responses may vary depending on the specific training and tuning of the AI models used.
+## Author
+Nermine Kabadou ([@nerminekabadou](https://github.com/nerminekabadou))
