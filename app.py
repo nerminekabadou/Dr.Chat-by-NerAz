@@ -19,6 +19,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 
 from llm_models import resolve_gemini_model
+from query_runner import run_query
 from sql_guard import UnsafeQueryError, validate_select
 
 load_dotenv()
@@ -50,7 +51,12 @@ class DirectGeminiLLM(LLM):
         import google.generativeai as genai
 
         genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-        return genai.GenerativeModel(resolve_gemini_model(genai)).generate_content(prompt).text
+        from google.api_core import retry
+
+        model = genai.GenerativeModel(resolve_gemini_model(genai))
+        # Short retry budget: visitors get a quick answer (or a quota message) instead of waiting.
+        options = {"timeout": 60, "retry": retry.Retry(initial=1.0, maximum=4.0, timeout=15.0)}
+        return model.generate_content(prompt, request_options=options).text
 
     @property
     def _llm_type(self) -> str:
@@ -134,10 +140,10 @@ def build_context(question: str):
     trace["guard"] = "passed"
 
     try:
-        result = db.run(query)
+        result = run_query(db, query)
     except Exception as error:  # surfaced to the LLM so it can explain the failure
         return f"Error executing SQL query: {error}", trace
-    return f"SQL Query: {query}\nQuery Result: {result}", trace
+    return f"SQL Query: {query}\n{result}", trace
 
 
 def friendly_error(error: Exception) -> str:

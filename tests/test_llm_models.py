@@ -16,3 +16,11 @@ def test_configured_model_wins_when_available():
 
 def test_retired_configured_model_is_ignored():
     assert choose_model(AVAILABLE, "gemini-2.5-flash") == "gemini-3.8-flash"
+
+
+def test_demo_prefers_newest_flash_lite():
+    assert choose_model(AVAILABLE + ["models/gemini-3.5-flash-lite"], prefer_lite=True) == "gemini-3.5-flash-lite"
+
+
+def test_lite_preference_falls_back_to_flash():
+    assert choose_model(["models/gemini-3.8-flash"], prefer_lite=True) == "gemini-3.8-flash"
