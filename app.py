@@ -165,7 +165,7 @@ def show_trace(trace):
         st.markdown(f"**Route:** `{trace['route']}`")
         if trace["sql"]:
             st.markdown("**SQL written by the LLM:**")
-            st.code(trace["sql"], language="sql")
+            st.code(trace["sql"], language="sql", wrap_lines=True)
             if trace["guard"] == "passed":
                 st.success("Safety guard: single read-only SELECT, executed on a read-only connection.")
             else:
