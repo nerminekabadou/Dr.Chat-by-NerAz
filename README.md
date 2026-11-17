@@ -2,6 +2,10 @@
 
 [![tests](https://github.com/nerminekabadou/Dr.Chat-by-NerAz/actions/workflows/tests.yml/badge.svg)](https://github.com/nerminekabadou/Dr.Chat-by-NerAz/actions/workflows/tests.yml)
 
+**[▶ Try it live](https://dr-chat-nermine.streamlit.app/)**: it runs on a database of fictional hospitals, and each answer shows the SQL the LLM wrote and the safety guard's verdict. *The free hosting sleeps when idle, so the first visit can take about a minute. On the free Gemini tier, questions are rate-limited.*
+
+<img src="docs/demo.png" width="640" alt="Dr.Chat answering which doctors work in cardiology, showing the generated SQL and the safety guard verdict">
+
 Dr.Chat is a chatbot for a hospital management platform. It answers two kinds of questions:
 
 - **General questions** about health or the hospital, answered directly by an LLM.
