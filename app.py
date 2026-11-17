@@ -92,20 +92,18 @@ def get_database() -> SQLDatabase:
 llm = DirectGeminiLLM() if os.getenv("LLM_MODE") == "direct" else BackendLLM()
 parser = StrOutputParser()
 
-route_chain = PromptTemplate.from_template(
-    """Determine if the following question requires a database query or a general answer.
-Question: {question}
-If it requires a database query, respond with 'DATABASE'. If it's a general question, respond with 'GENERAL'.
-Response (DATABASE/GENERAL): """
-) | llm | parser
+# One call decides the route AND writes the SQL (2 LLM calls per question instead of 3,
+# which matters on free-tier rate limits).
+plan_chain = PromptTemplate.from_template(
+    """You are the assistant of a hospital management platform. Database tables:
+{table_info}
 
-sql_chain = PromptTemplate.from_template(
-    """Given the following SQL table information, write a single read-only PostgreSQL
-SELECT query that answers the user's question.
-SQL table info: {table_info}
-User question: {question}
-Provide only the SQL query, without any additional text or explanation.
-SQL query: """
+If answering the question below needs data from these tables, reply with ONLY a single
+read-only {dialect} SELECT query, with no explanation and no Markdown.
+Otherwise reply with exactly the word GENERAL.
+
+Question: {question}
+Reply: """
 ) | llm | parser
 
 answer_chain = PromptTemplate.from_template(
@@ -120,16 +118,16 @@ Your response: """
 def build_context(question: str):
     """Return the context for the final answer and a trace of what happened."""
     trace = {"route": "GENERAL", "sql": None, "guard": None}
-    route = route_chain.invoke({"question": question}).strip().upper()
-    if "DATABASE" not in route:
+    db = get_database()
+    plan = plan_chain.invoke({"question": question, "table_info": db.get_table_info(),
+                              "dialect": db.dialect})
+    if plan.strip().strip("`").strip().upper().startswith("GENERAL"):
         return "This is a general question that doesn't require database access.", trace
 
     trace["route"] = "DATABASE"
-    db = get_database()
-    generated = sql_chain.invoke({"question": question, "table_info": db.get_table_info()})
-    trace["sql"] = " ".join(generated.replace("```sql", "").replace("```", "").split())
+    trace["sql"] = " ".join(plan.replace("```sql", "").replace("```", "").split())
     try:
-        query = validate_select(generated)
+        query = validate_select(plan)
     except UnsafeQueryError as error:
         trace["guard"] = f"blocked: {error}"
         return f"The generated query was rejected for safety reasons: {error}", trace
@@ -140,6 +138,14 @@ def build_context(question: str):
     except Exception as error:  # surfaced to the LLM so it can explain the failure
         return f"Error executing SQL query: {error}", trace
     return f"SQL Query: {query}\nQuery Result: {result}", trace
+
+
+def friendly_error(error: Exception) -> str:
+    text = str(error)
+    if "429" in text or "quota" in text.lower() or "rate" in text.lower():
+        return ("The demo has reached the free Gemini API limit for this minute. "
+                "Please wait about a minute and ask again.")
+    return "Sorry, the assistant is unavailable right now. Please try again later."
 
 
 def answer(question: str):
@@ -205,7 +211,8 @@ if prompt:
             try:
                 response, trace = answer(prompt)
             except Exception as error:  # network or LLM provider error
-                response = f"Sorry, the assistant is unavailable right now ({error})."
+                print(f"LLM error: {error}", flush=True)  # full details in the server logs
+                response = friendly_error(error)
 
     with st.chat_message("assistant"):
         st.markdown(response)

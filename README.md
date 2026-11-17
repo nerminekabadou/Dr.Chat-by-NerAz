@@ -11,14 +11,14 @@ Dr.Chat is a chatbot for a hospital management platform. It answers two kinds of
 
 ```
  Streamlit UI (app.py)
-   │ 1. route: DATABASE or GENERAL?          ┌──────────────────────────┐
-   │ 2. text-to-SQL (if DATABASE)  ─────────▶│ FastAPI backend (main.py)│──▶ Gemini / local Llama
-   │ 3. answer from SQL result     ◀─────────└──────────────────────────┘
+   │ 1. plan: SELECT query, or GENERAL  ┌──────────────────────────┐
+   │                            ───────▶│ FastAPI backend (main.py)│──▶ Gemini / local Llama
+   │ 2. answer from the SQL result ◀────└──────────────────────────┘
    │
-   └─ validated SELECT ──▶ PostgreSQL (read-only connection)
+   └─ validated SELECT ──▶ PostgreSQL or SQLite (read-only connection)
 ```
 
-The prompts are LangChain chains (`prompt | llm | parser`) that call the FastAPI backend through a custom LangChain `LLM` wrapper. The backend serves Google Gemini (`/ask_gemini`) and, optionally, a local Llama model through `llama-cpp-python` (`/ask`).
+Each question takes **two LLM calls**: one decides whether data is needed and, if so, writes the SQL in one go; the other turns the query result into an answer. The prompts are LangChain chains (`prompt | llm | parser`). They call the FastAPI backend through a custom LangChain `LLM` wrapper, or Gemini directly when `LLM_MODE=direct` (used by the hosted demo). The backend serves Google Gemini (`/ask_gemini`) and, optionally, a local Llama model through `llama-cpp-python` (`/ask`). The Gemini model is picked at runtime: `GEMINI_MODEL` if it's available, otherwise the newest stable Flash model your key can use, because Google retires model versions.
 
 ### Safety of LLM-generated SQL
 The LLM writes the SQL, so the app treats it as untrusted input:
