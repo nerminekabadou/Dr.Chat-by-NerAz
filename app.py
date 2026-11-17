@@ -18,7 +18,7 @@ from langchain_core.language_models.llms import LLM
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 
-from llm_models import resolve_gemini_model
+from llm_models import generate_text
 from query_runner import run_query
 from sql_guard import UnsafeQueryError, validate_select
 
@@ -53,10 +53,9 @@ class DirectGeminiLLM(LLM):
         genai.configure(api_key=os.environ["GEMINI_API_KEY"])
         from google.api_core import retry
 
-        model = genai.GenerativeModel(resolve_gemini_model(genai))
         # Short retry budget: visitors get a quick answer (or a quota message) instead of waiting.
         options = {"timeout": 60, "retry": retry.Retry(initial=1.0, maximum=4.0, timeout=15.0)}
-        return model.generate_content(prompt, request_options=options).text
+        return generate_text(genai, prompt, options)
 
     @property
     def _llm_type(self) -> str:

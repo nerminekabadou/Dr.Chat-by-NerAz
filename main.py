@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from llm_models import resolve_gemini_model
+from llm_models import generate_text
 
 load_dotenv()
 
@@ -31,7 +31,7 @@ def get_gemini():
     if not api_key:
         raise HTTPException(status_code=503, detail="GEMINI_API_KEY is not configured")
     genai.configure(api_key=api_key)
-    return genai.GenerativeModel(resolve_gemini_model(genai))
+    return genai
 
 
 @lru_cache(maxsize=1)
@@ -64,9 +64,9 @@ def ask_llama(query: Query):
 
 @app.post("/ask_gemini")
 def ask_gemini(query: Query):
-    model = get_gemini()
+    client = get_gemini()
     try:
-        return {"response": model.generate_content(query.question).text}
+        return {"response": generate_text(client, query.question)}
     except Exception as error:
         raise HTTPException(status_code=502, detail=f"Gemini error: {error}") from error
 

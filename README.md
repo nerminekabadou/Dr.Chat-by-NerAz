@@ -18,7 +18,7 @@ Dr.Chat is a chatbot for a hospital management platform. It answers two kinds of
    └─ validated SELECT ──▶ PostgreSQL or SQLite (read-only connection)
 ```
 
-Each question takes **two LLM calls**: one decides whether data is needed and, if so, writes the SQL in one go; the other turns the query result into an answer. The prompts are LangChain chains (`prompt | llm | parser`). They call the FastAPI backend through a custom LangChain `LLM` wrapper, or Gemini directly when `LLM_MODE=direct` (used by the hosted demo). The backend serves Google Gemini (`/ask_gemini`) and, optionally, a local Llama model through `llama-cpp-python` (`/ask`). The Gemini model is picked at runtime: `GEMINI_MODEL` if it's available, otherwise the newest stable Flash model your key can use, because Google retires model versions.
+Each question takes **two LLM calls**: one decides whether data is needed and, if so, writes the SQL in one go; the other turns the query result into an answer. The prompts are LangChain chains (`prompt | llm | parser`). They call the FastAPI backend through a custom LangChain `LLM` wrapper, or Gemini directly when `LLM_MODE=direct` (used by the hosted demo). The backend serves Google Gemini (`/ask_gemini`) and, optionally, a local Llama model through `llama-cpp-python` (`/ask`). The Gemini model is picked at runtime, because Google retires model versions and new keys lose access to older ones. The app tries `GEMINI_MODEL` (if set), then Google's `gemini-flash-latest` aliases, then the newest Flash models on your account, and remembers the first one that answers ([`llm_models.py`](llm_models.py)).
 
 ### Safety of LLM-generated SQL
 The LLM writes the SQL, so the app treats it as untrusted input:
