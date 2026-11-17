@@ -15,12 +15,9 @@ import streamlit as st
 from dotenv import load_dotenv
 from langchain_community.utilities import SQLDatabase
 from langchain_core.language_models.llms import LLM
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import PromptTemplate
 
 from llm_models import generate_text
-from query_runner import run_query
-from sql_guard import UnsafeQueryError, validate_select
+from pipeline import build_context, make_chains
 
 load_dotenv()
 
@@ -95,54 +92,7 @@ def get_database() -> SQLDatabase:
 
 
 llm = DirectGeminiLLM() if os.getenv("LLM_MODE") == "direct" else BackendLLM()
-parser = StrOutputParser()
-
-# One call decides the route AND writes the SQL (2 LLM calls per question instead of 3,
-# which matters on free-tier rate limits).
-plan_chain = PromptTemplate.from_template(
-    """You are the assistant of a hospital management platform. Database tables:
-{table_info}
-
-If answering the question below needs data from these tables, reply with ONLY a single
-read-only {dialect} SELECT query, with no explanation and no Markdown.
-Otherwise reply with exactly the word GENERAL.
-
-Question: {question}
-Reply: """
-) | llm | parser
-
-answer_chain = PromptTemplate.from_template(
-    """Based on the following information, answer the user's question in a clear,
-detailed and human-readable way.
-User question: {question}
-Context: {context}
-Your response: """
-) | llm | parser
-
-
-def build_context(question: str):
-    """Return the context for the final answer and a trace of what happened."""
-    trace = {"route": "GENERAL", "sql": None, "guard": None}
-    db = get_database()
-    plan = plan_chain.invoke({"question": question, "table_info": db.get_table_info(),
-                              "dialect": db.dialect})
-    if plan.strip().strip("`").strip().upper().startswith("GENERAL"):
-        return "This is a general question that doesn't require database access.", trace
-
-    trace["route"] = "DATABASE"
-    trace["sql"] = " ".join(plan.replace("```sql", "").replace("```", "").split())
-    try:
-        query = validate_select(plan)
-    except UnsafeQueryError as error:
-        trace["guard"] = f"blocked: {error}"
-        return f"The generated query was rejected for safety reasons: {error}", trace
-    trace["guard"] = "passed"
-
-    try:
-        result = run_query(db, query)
-    except Exception as error:  # surfaced to the LLM so it can explain the failure
-        return f"Error executing SQL query: {error}", trace
-    return f"SQL Query: {query}\n{result}", trace
+plan_chain, answer_chain = make_chains(llm)
 
 
 def friendly_error(error: Exception) -> str:
@@ -154,7 +104,7 @@ def friendly_error(error: Exception) -> str:
 
 
 def answer(question: str):
-    context, trace = build_context(question)
+    context, trace = build_context(plan_chain, get_database(), question)
     return answer_chain.invoke({"question": question, "context": context}), trace
 
 

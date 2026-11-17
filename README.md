@@ -25,13 +25,15 @@ Dr.Chat is a chatbot for a hospital management platform. It answers two kinds of
 Each question takes **two LLM calls**: one decides whether data is needed and, if so, writes the SQL in one go; the other turns the query result into an answer. The prompts are LangChain chains (`prompt | llm | parser`). They call the FastAPI backend through a custom LangChain `LLM` wrapper, or Gemini directly when `LLM_MODE=direct` (used by the hosted demo). The backend serves Google Gemini (`/ask_gemini`) and, optionally, a local Llama model through `llama-cpp-python` (`/ask`). The Gemini model is picked at runtime, because Google retires model versions and new keys lose access to older ones. The app tries `GEMINI_MODEL` (if set), then Google's `gemini-flash-latest` aliases, then the newest Flash models on your account, and remembers the first one that answers ([`llm_models.py`](llm_models.py)).
 
 ### Safety of LLM-generated SQL
-The LLM writes the SQL, so the app treats it as untrusted input:
+The LLM writes the SQL, so the app treats it as untrusted input and defends in layers:
 
-1. [`sql_guard.py`](sql_guard.py) only accepts a single `SELECT` (or `WITH … SELECT`) statement. It rejects multiple statements and any write or DDL keyword.
-2. The database connection itself is opened with `default_transaction_read_only=on`, so a query that slipped past the guard still couldn't change any data.
-3. Only the tables the chatbot needs are exposed to the model: `doctors`, `hospitals`, `illnesses`, `medications`.
+1. **Parser-based guard** ([`sql_guard.py`](sql_guard.py)): the query is parsed with sqlglot and accepted only if it is a single `SELECT` with no write, DDL or engine command anywhere in it. It may only read the allowed tables (`doctors`, `hospitals`, `illnesses`, `medications`), only call allow-listed functions, and has no recursive CTEs. A `LIMIT` is added when missing.
+2. **Read-only execution** ([`query_runner.py`](query_runner.py)): read-only connection, `SET TRANSACTION READ ONLY` on every PostgreSQL query, and a 5-second time limit.
+3. For production, also connect with a database user that only has `SELECT` rights on those tables.
 
-For production you should also connect with a database user that only has `SELECT` rights.
+**[Security benchmark](security/README.md):** 90 adversarial prompts on two local LLMs, plus 41 hand-written SQL attacks on SQLite and PostgreSQL. Before hardening, data leaks and denial-of-service queries got through. After hardening there are **0 successful attacks**, and accuracy on legitimate questions is unchanged. The fuzzer runs in CI on every push.
+
+<img src="security/results/attack_llm.png" width="720" alt="Attack benchmark: harmful SQL written by the models vs harm that reached the app before and after hardening">
 
 ## Tech stack
 Python · Streamlit · FastAPI · LangChain · Google Gemini · llama-cpp-python · PostgreSQL / SQLAlchemy · pytest · GitHub Actions
@@ -77,9 +79,14 @@ pytest
 ## Project structure
 
 ```
-app.py          Streamlit chat UI, routing and text-to-SQL chains
+app.py          Streamlit chat UI (demo mode, answer traces)
 main.py         FastAPI backend (Gemini + optional Llama)
-sql_guard.py    Validation of generated SQL
+pipeline.py     Plan → guard → run → answer (shared by the app and the benchmark)
+sql_guard.py    Validation of generated SQL (sqlglot)
+query_runner.py Read-only execution with a time limit
+llm_models.py   Picks an available Gemini model at runtime
+security/       Text-to-SQL attack benchmark and results
+deploy/         Demo database seed and Docker image
 tests/          Unit tests
 ```
 

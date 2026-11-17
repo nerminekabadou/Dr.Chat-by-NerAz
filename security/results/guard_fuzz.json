@@ -1,0 +1,629 @@
+{
+  "malicious": [
+    {
+      "id": "W1",
+      "category": "write",
+      "harm": "deletes data",
+      "sql": "DELETE FROM doctors",
+      "dialect": "sqlite",
+      "before": {
+        "outcome": "guard",
+        "detail": "Only SELECT queries are allowed."
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Only SELECT queries are allowed."
+      }
+    },
+    {
+      "id": "W1",
+      "category": "write",
+      "harm": "deletes data",
+      "sql": "DELETE FROM doctors",
+      "dialect": "postgres",
+      "before": {
+        "outcome": "guard",
+        "detail": "Only SELECT queries are allowed."
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Only SELECT queries are allowed."
+      }
+    },
+    {
+      "id": "W2",
+      "category": "write",
+      "harm": "drops a table",
+      "sql": "SELECT 1; DROP TABLE doctors",
+      "dialect": "sqlite",
+      "before": {
+        "outcome": "guard",
+        "detail": "Only a single statement is allowed."
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Only a single statement is allowed."
+      }
+    },
+    {
+      "id": "W2",
+      "category": "write",
+      "harm": "drops a table",
+      "sql": "SELECT 1; DROP TABLE doctors",
+      "dialect": "postgres",
+      "before": {
+        "outcome": "guard",
+        "detail": "Only a single statement is allowed."
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Only a single statement is allowed."
+      }
+    },
+    {
+      "id": "W3",
+      "category": "write",
+      "harm": "drops a table",
+      "sql": "SeLeCt 1;\nDrOp TaBlE doctors",
+      "dialect": "sqlite",
+      "before": {
+        "outcome": "guard",
+        "detail": "Only a single statement is allowed."
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Only a single statement is allowed."
+      }
+    },
+    {
+      "id": "W3",
+      "category": "write",
+      "harm": "drops a table",
+      "sql": "SeLeCt 1;\nDrOp TaBlE doctors",
+      "dialect": "postgres",
+      "before": {
+        "outcome": "guard",
+        "detail": "Only a single statement is allowed."
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Only a single statement is allowed."
+      }
+    },
+    {
+      "id": "W4",
+      "category": "write",
+      "harm": "drops a table",
+      "sql": "SELECT 1 /* ; */ ; DROP TABLE doctors",
+      "dialect": "sqlite",
+      "before": {
+        "outcome": "guard",
+        "detail": "Only a single statement is allowed."
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Only a single statement is allowed."
+      }
+    },
+    {
+      "id": "W4",
+      "category": "write",
+      "harm": "drops a table",
+      "sql": "SELECT 1 /* ; */ ; DROP TABLE doctors",
+      "dialect": "postgres",
+      "before": {
+        "outcome": "guard",
+        "detail": "Only a single statement is allowed."
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Only a single statement is allowed."
+      }
+    },
+    {
+      "id": "W5",
+      "category": "write",
+      "harm": "deletes data",
+      "sql": "SELECT * FROM doctors -- harmless\n; DELETE FROM doctors",
+      "dialect": "sqlite",
+      "before": {
+        "outcome": "guard",
+        "detail": "Only a single statement is allowed."
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Only a single statement is allowed."
+      }
+    },
+    {
+      "id": "W5",
+      "category": "write",
+      "harm": "deletes data",
+      "sql": "SELECT * FROM doctors -- harmless\n; DELETE FROM doctors",
+      "dialect": "postgres",
+      "before": {
+        "outcome": "guard",
+        "detail": "Only a single statement is allowed."
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Only a single statement is allowed."
+      }
+    },
+    {
+      "id": "W6",
+      "category": "write",
+      "harm": "deletes data",
+      "sql": "WITH gone AS (DELETE FROM doctors RETURNING *) SELECT * FROM gone",
+      "dialect": "postgres",
+      "before": {
+        "outcome": "guard",
+        "detail": "Keyword 'DELETE' is not allowed."
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Delete is not allowed."
+      }
+    },
+    {
+      "id": "W7",
+      "category": "write",
+      "harm": "copies data into a new table",
+      "sql": "SELECT * INTO doctors_copy FROM doctors",
+      "dialect": "sqlite",
+      "before": {
+        "outcome": "guard",
+        "detail": "Keyword 'INTO' is not allowed."
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Into is not allowed."
+      }
+    },
+    {
+      "id": "W7",
+      "category": "write",
+      "harm": "copies data into a new table",
+      "sql": "SELECT * INTO doctors_copy FROM doctors",
+      "dialect": "postgres",
+      "before": {
+        "outcome": "guard",
+        "detail": "Keyword 'INTO' is not allowed."
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Into is not allowed."
+      }
+    },
+    {
+      "id": "W8",
+      "category": "write",
+      "harm": "overwrites a row",
+      "sql": "REPLACE INTO doctors (id, name) VALUES (1, 'Mallory')",
+      "dialect": "sqlite",
+      "before": {
+        "outcome": "guard",
+        "detail": "Only SELECT queries are allowed."
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Only SELECT queries are allowed."
+      }
+    },
+    {
+      "id": "W9",
+      "category": "write",
+      "harm": "creates a database file",
+      "sql": "ATTACH DATABASE '/tmp/evil.db' AS evil",
+      "dialect": "sqlite",
+      "before": {
+        "outcome": "guard",
+        "detail": "Only SELECT queries are allowed."
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Only SELECT queries are allowed."
+      }
+    },
+    {
+      "id": "W10",
+      "category": "write",
+      "harm": "updates data",
+      "sql": "UPDATE doctors SET specialty = 'none'",
+      "dialect": "sqlite",
+      "before": {
+        "outcome": "guard",
+        "detail": "Only SELECT queries are allowed."
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Only SELECT queries are allowed."
+      }
+    },
+    {
+      "id": "W10",
+      "category": "write",
+      "harm": "updates data",
+      "sql": "UPDATE doctors SET specialty = 'none'",
+      "dialect": "postgres",
+      "before": {
+        "outcome": "guard",
+        "detail": "Only SELECT queries are allowed."
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Only SELECT queries are allowed."
+      }
+    },
+    {
+      "id": "D1",
+      "category": "disable-defence",
+      "harm": "turns off read-only mode for the pooled connection",
+      "sql": "SELECT set_config('default_transaction_read_only', 'off', false)",
+      "dialect": "postgres",
+      "before": {
+        "outcome": "database",
+        "detail": "setting was reverted when the transaction rolled back"
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Function 'set_config' is not allowed."
+      }
+    },
+    {
+      "id": "D2",
+      "category": "disable-defence",
+      "harm": "changes engine settings",
+      "sql": "PRAGMA query_only = 0",
+      "dialect": "sqlite",
+      "before": {
+        "outcome": "guard",
+        "detail": "Only SELECT queries are allowed."
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Only SELECT queries are allowed."
+      }
+    },
+    {
+      "id": "L1",
+      "category": "data-leak",
+      "harm": "reveals the full schema",
+      "sql": "SELECT name, sql FROM sqlite_master",
+      "dialect": "sqlite",
+      "before": {
+        "outcome": "SUCCEEDED",
+        "detail": "Columns: ['name', 'sql'] Rows: [('hospitals', 'CREATE TABLE hospitals (id INTEGER PRIMARY KEY, name TEXT, city TEXT,\\n  "
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Table 'sqlite_master' is not available to the assistant."
+      }
+    },
+    {
+      "id": "L2",
+      "category": "data-leak",
+      "harm": "reveals database users",
+      "sql": "SELECT usename, usesuper FROM pg_user",
+      "dialect": "postgres",
+      "before": {
+        "outcome": "SUCCEEDED",
+        "detail": "Columns: ['usename', 'usesuper'] Rows: [('postgres', True), ('drchat', False)]"
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Table 'pg_user' is not available to the assistant."
+      }
+    },
+    {
+      "id": "L3",
+      "category": "data-leak",
+      "harm": "reveals password hashes (superuser)",
+      "sql": "SELECT usename, passwd FROM pg_shadow",
+      "dialect": "postgres",
+      "before": {
+        "outcome": "database",
+        "detail": "ProgrammingError: (psycopg.errors.InsufficientPrivilege) permission denied for view pg_shadow"
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Table 'pg_shadow' is not available to the assistant."
+      }
+    },
+    {
+      "id": "L4",
+      "category": "data-leak",
+      "harm": "reads a server file",
+      "sql": "SELECT pg_read_file('/etc/passwd')",
+      "dialect": "postgres",
+      "before": {
+        "outcome": "database",
+        "detail": "ProgrammingError: (psycopg.errors.InsufficientPrivilege) permission denied for function pg_read_file"
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Function 'pg_read_file' is not allowed."
+      }
+    },
+    {
+      "id": "L5",
+      "category": "data-leak",
+      "harm": "lists server directories",
+      "sql": "SELECT pg_ls_dir('.')",
+      "dialect": "postgres",
+      "before": {
+        "outcome": "database",
+        "detail": "ProgrammingError: (psycopg.errors.InsufficientPrivilege) permission denied for function pg_ls_dir"
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Function 'pg_ls_dir' is not allowed."
+      }
+    },
+    {
+      "id": "L6",
+      "category": "data-leak",
+      "harm": "reveals server settings",
+      "sql": "SELECT name, setting FROM pg_settings",
+      "dialect": "postgres",
+      "before": {
+        "outcome": "SUCCEEDED",
+        "detail": "Columns: ['name', 'setting'] Rows: [('allow_in_place_tablespaces', 'off'), ('allow_system_table_mods', 'off'), ('applica"
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Table 'pg_settings' is not available to the assistant."
+      }
+    },
+    {
+      "id": "L7",
+      "category": "data-leak",
+      "harm": "reveals other tables",
+      "sql": "SELECT table_schema, table_name FROM information_schema.tables",
+      "dialect": "postgres",
+      "before": {
+        "outcome": "SUCCEEDED",
+        "detail": "Columns: ['table_schema', 'table_name'] Rows: [('pg_catalog', 'pg_type'), ('pg_catalog', 'pg_foreign_table'), ('pg_catal"
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Schema-qualified table 'information_schema.tables' is not allowed."
+      }
+    },
+    {
+      "id": "L8",
+      "category": "data-leak",
+      "harm": "reads salaries (table outside the allow-list)",
+      "sql": "SELECT name, monthly_salary FROM staff_salaries",
+      "dialect": "sqlite",
+      "before": {
+        "outcome": "SUCCEEDED",
+        "detail": "Columns: ['name', 'monthly_salary'] Rows: [('Dr. Amira Ben Salah', 9800), ('Dr. Karim Trabelsi', 9100)]"
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Table 'staff_salaries' is not available to the assistant."
+      }
+    },
+    {
+      "id": "L8",
+      "category": "data-leak",
+      "harm": "reads salaries (table outside the allow-list)",
+      "sql": "SELECT name, monthly_salary FROM staff_salaries",
+      "dialect": "postgres",
+      "before": {
+        "outcome": "SUCCEEDED",
+        "detail": "Columns: ['name', 'monthly_salary'] Rows: [('Dr. Amira Ben Salah', 9800), ('Dr. Karim Trabelsi', 9100)]"
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Table 'staff_salaries' is not available to the assistant."
+      }
+    },
+    {
+      "id": "L9",
+      "category": "data-leak",
+      "harm": "smuggles salaries into a normal answer",
+      "sql": "SELECT name, specialty FROM doctors UNION ALL SELECT name, CAST(monthly_salary AS TEXT) FROM staff_salaries",
+      "dialect": "sqlite",
+      "before": {
+        "outcome": "SUCCEEDED",
+        "detail": "Columns: ['name', 'specialty'] Rows: [('Dr. Amira Ben Salah', 'Cardiology'), ('Dr. Karim Trabelsi', 'Cardiology'), ('Dr."
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Table 'staff_salaries' is not available to the assistant."
+      }
+    },
+    {
+      "id": "L9",
+      "category": "data-leak",
+      "harm": "smuggles salaries into a normal answer",
+      "sql": "SELECT name, specialty FROM doctors UNION ALL SELECT name, CAST(monthly_salary AS TEXT) FROM staff_salaries",
+      "dialect": "postgres",
+      "before": {
+        "outcome": "SUCCEEDED",
+        "detail": "Columns: ['name', 'specialty'] Rows: [('Dr. Amira Ben Salah', 'Cardiology'), ('Dr. Karim Trabelsi', 'Cardiology'), ('Dr."
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Table 'staff_salaries' is not available to the assistant."
+      }
+    },
+    {
+      "id": "L10",
+      "category": "data-leak",
+      "harm": "reveals the columns of any table",
+      "sql": "SELECT name FROM pragma_table_info('staff_salaries')",
+      "dialect": "sqlite",
+      "before": {
+        "outcome": "SUCCEEDED",
+        "detail": "Columns: ['name'] Rows: [('id',), ('name',), ('monthly_salary',)]"
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Table functions are not allowed."
+      }
+    },
+    {
+      "id": "R1",
+      "category": "denial-of-service",
+      "harm": "infinite query",
+      "sql": "WITH RECURSIVE r(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r) SELECT count(*) FROM r",
+      "dialect": "sqlite",
+      "before": {
+        "outcome": "SUCCEEDED",
+        "detail": "still running after 20s (no time limit in the app)"
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Recursive queries are not allowed."
+      }
+    },
+    {
+      "id": "R1",
+      "category": "denial-of-service",
+      "harm": "infinite query",
+      "sql": "WITH RECURSIVE r(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r) SELECT count(*) FROM r",
+      "dialect": "postgres",
+      "before": {
+        "outcome": "SUCCEEDED",
+        "detail": "still running after 20s (no time limit in the app)"
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Recursive queries are not allowed."
+      }
+    },
+    {
+      "id": "R2",
+      "category": "denial-of-service",
+      "harm": "ties up a connection for 10 minutes",
+      "sql": "SELECT pg_sleep(600)",
+      "dialect": "postgres",
+      "before": {
+        "outcome": "SUCCEEDED",
+        "detail": "still running after 20s (no time limit in the app)"
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Function 'pg_sleep' is not allowed."
+      }
+    },
+    {
+      "id": "R3",
+      "category": "denial-of-service",
+      "harm": "allocates 1 GB of memory",
+      "sql": "SELECT length(randomblob(1000000000))",
+      "dialect": "sqlite",
+      "before": {
+        "outcome": "SUCCEEDED",
+        "detail": "Columns: ['length(randomblob(1000000000))'] Rows: [(1000000000,)]"
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Function 'randomblob' is not allowed."
+      }
+    },
+    {
+      "id": "R4",
+      "category": "denial-of-service",
+      "harm": "cartesian explosion (10^10 rows)",
+      "sql": "SELECT count(*) FROM doctors a, doctors b, doctors c, doctors d, doctors e, doctors f, doctors g, doctors h, doctors i, doctors j",
+      "dialect": "sqlite",
+      "before": {
+        "outcome": "SUCCEEDED",
+        "detail": "still running after 20s (no time limit in the app)"
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "At most 4 table references are allowed."
+      }
+    },
+    {
+      "id": "R4",
+      "category": "denial-of-service",
+      "harm": "cartesian explosion (10^10 rows)",
+      "sql": "SELECT count(*) FROM doctors a, doctors b, doctors c, doctors d, doctors e, doctors f, doctors g, doctors h, doctors i, doctors j",
+      "dialect": "postgres",
+      "before": {
+        "outcome": "SUCCEEDED",
+        "detail": "still running after 20s (no time limit in the app)"
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "At most 4 table references are allowed."
+      }
+    },
+    {
+      "id": "R5",
+      "category": "denial-of-service",
+      "harm": "generates 10^12 rows",
+      "sql": "SELECT count(*) FROM generate_series(1, 1000000000000)",
+      "dialect": "postgres",
+      "before": {
+        "outcome": "SUCCEEDED",
+        "detail": "still running after 20s (no time limit in the app)"
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Table functions are not allowed."
+      }
+    },
+    {
+      "id": "X1",
+      "category": "code-execution",
+      "harm": "loads a native library",
+      "sql": "SELECT load_extension('/tmp/evil.so')",
+      "dialect": "sqlite",
+      "before": {
+        "outcome": "database",
+        "detail": "OperationalError: (sqlite3.OperationalError) not authorized"
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Function 'load_extension' is not allowed."
+      }
+    },
+    {
+      "id": "X2",
+      "category": "code-execution",
+      "harm": "runs a shell command (superuser)",
+      "sql": "COPY (SELECT 1) TO PROGRAM 'id'",
+      "dialect": "postgres",
+      "before": {
+        "outcome": "guard",
+        "detail": "Only SELECT queries are allowed."
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Only SELECT queries are allowed."
+      }
+    },
+    {
+      "id": "X3",
+      "category": "code-execution",
+      "harm": "imports a server file",
+      "sql": "SELECT lo_import('/etc/passwd')",
+      "dialect": "postgres",
+      "before": {
+        "outcome": "database",
+        "detail": "ProgrammingError: (psycopg.errors.InsufficientPrivilege) permission denied for function lo_import"
+      },
+      "after": {
+        "outcome": "guard",
+        "detail": "Function 'lo_import' is not allowed."
+      }
+    }
+  ],
+  "benign": {
+    "before": {
+      "total": 15,
+      "wrongly_blocked": []
+    },
+    "after": {
+      "total": 15,
+      "wrongly_blocked": []
+    }
+  }
+}
