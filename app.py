@@ -18,6 +18,7 @@ from langchain_core.language_models.llms import LLM
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 
+from llm_models import resolve_gemini_model
 from sql_guard import UnsafeQueryError, validate_select
 
 load_dotenv()
@@ -45,13 +46,11 @@ class BackendLLM(LLM):
 class DirectGeminiLLM(LLM):
     """Calls Gemini in-process (LLM_MODE=direct), for hosts that run only the Streamlit app."""
 
-    model_name: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-
     def _call(self, prompt: str, stop: Optional[List[str]] = None, **kwargs: Any) -> str:
         import google.generativeai as genai
 
         genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-        return genai.GenerativeModel(self.model_name).generate_content(prompt).text
+        return genai.GenerativeModel(resolve_gemini_model(genai)).generate_content(prompt).text
 
     @property
     def _llm_type(self) -> str:

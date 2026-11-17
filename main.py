@@ -14,9 +14,9 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-load_dotenv()
+from llm_models import resolve_gemini_model
 
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+load_dotenv()
 
 app = FastAPI(title="Dr.Chat API")
 
@@ -31,7 +31,7 @@ def get_gemini():
     if not api_key:
         raise HTTPException(status_code=503, detail="GEMINI_API_KEY is not configured")
     genai.configure(api_key=api_key)
-    return genai.GenerativeModel(GEMINI_MODEL)
+    return genai.GenerativeModel(resolve_gemini_model(genai))
 
 
 @lru_cache(maxsize=1)
